@@ -23,6 +23,8 @@ jobs:
         
     - name: Build with Maven
       run: mvn clean compile -X -DskipTests
+
+      
       
     - name: Package application
       run: mvn package -DskipTests
@@ -32,9 +34,34 @@ jobs:
         ls -la target/*.jar
         echo " Build successful!"
 
+  terraform-validation:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.7.0
+    
+    - name: Terraform Format Check
+      run: terraform -chdir=terraform fmt -check
+      
+    - name: Terraform Init
+      run: terraform -chdir=terraform init
+      
+    - name: Terraform Validate
+      run: terraform -chdir=terraform validate
+      
+    - name: Terraform Plan
+      run: terraform -chdir=terraform plan -input=false
+      env:
+        TF_CLI_ARGS_plan: "-lock=false"
+
   build-and-push:
     runs-on: ubuntu-latest
-    needs: build-and-test
+    needs: [build-and-test, terraform-validation]
     if: github.ref == 'refs/heads/main'
     
     steps:
