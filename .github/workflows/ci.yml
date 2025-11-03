@@ -23,7 +23,14 @@ jobs:
         
     - name: Build with Maven
       run: mvn clean compile -X -DskipTests
-  
+      
+    - name: Package application
+      run: mvn package -DskipTests
+      
+    - name: Verify build
+      run: |
+        ls -la target/*.jar
+        echo " Build successful!"
 
   build-and-push:
     runs-on: ubuntu-latest
@@ -33,21 +40,20 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+        
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
         
     - name: Build and push Backend
+      uses: docker/build-push-action@v5
       with:
         context: .
         file: ./Dockerfile
         push: true
-        tags: molka/backend:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        
-    - name: Build and push Frontend
-      with:
-        context: ./frontend
-        file: ./frontend/Dockerfile
-        push: true
-        tags: molka/frontend:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        tags: molkag/backend:latest
